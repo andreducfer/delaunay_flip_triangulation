@@ -42,15 +42,6 @@ def convex_angle(point_1, point_2, point_3):
               (point_2[1] - point_1[1]) * (point_3[0] - point_1[0]))
     return crossp > 0
 
-def calculate_angle(a, b, c):
-    ba = a - b
-    bc = c - b
-
-    cosine_angle = np.dot(ba, bc) / (np.linalg.norm(ba) * np.linalg.norm(bc))
-    angle = np.arccos(cosine_angle)
-
-    return np.degrees(angle)
-
 def flip(triangle_1, triangle_2):
     vertex_list = [triangle_1[0], triangle_1[1], triangle_1[2], triangle_2[0], triangle_2[1], triangle_2[2]]
     repeated_vertexes = list(set([x for x in vertex_list if vertex_list.count(x) > 1]))
@@ -71,24 +62,6 @@ def flip(triangle_1, triangle_2):
     new_triangle_2.sort()
 
     return new_triangle_1, new_triangle_2
-
-def convex_polygon(triangle_1, triangle_2, points):
-    vertex_to_verify = []
-    triangles = [triangle_1, triangle_2]
-    for triangle in triangles:
-        for i in range(3):
-            vertex_to_verify.append(triangle[i])
-
-    vertex_to_verify = list(set(vertex_to_verify))
-    vertex_to_verify.sort()
-
-    is_convex_polygon = True
-    for i in range(len(vertex_to_verify)):
-        if not convex_angle(points[vertex_to_verify[i - 2]], points[vertex_to_verify[i - 1]], points[vertex_to_verify[i]]):
-            is_convex_polygon = False
-            break
-
-    return is_convex_polygon
 
 def create_data_structure(triangulation_indexes):
     data_structure = []
@@ -162,32 +135,7 @@ def update_data_structure(new_triangle_1, new_triangle_2, index_1, index_2, tria
 
     return triangulation
 
-def get_angle_polygon(triangle_1, triangle_2, points):
-    triangles = [triangle_1, triangle_2]
-    angle_list = []
-
-    for triangle in triangles:
-        for i in range(len(triangle)):
-            angle = calculate_angle(points[triangle[i]], points[triangle[(i + 1) % 3]], points[triangle[(i + 2) % 3]])
-            angle_list.append(angle)
-
-    angle_list.sort()
-
-    return angle_list
-
-def fatter_triangulation(angles_before_flip, angles_after_flip):
-    fatter = False
-
-    for k in range(len(angles_before_flip)):
-        if angles_after_flip[k] > angles_before_flip[k]:
-            fatter = True
-            break
-        elif angles_after_flip[k] < angles_before_flip[k]:
-            break
-
-    return fatter
-
-def make_flip(triangle_1, triangle_2, points):
+def can_make_flip(triangle_1, triangle_2, points):
     a = points[triangle_1[0]]
     b = points[triangle_1[1]]
     c = points[triangle_1[2]]
@@ -202,51 +150,44 @@ def make_flip(triangle_1, triangle_2, points):
         if not in_triangle_1:
             d = points[element_triangle_2]
 
-    first_column = np.array([a[0] - d[0], b[0] - d[0], c[0] - d[0]])
-    second_column = np.array([a[1] - d[1], b[1] - d[1], c[1] - d[1]])
-    third_column = np.array([np.square(a[0] - d[0]) + np.square(a[1] - d[1]), np.square(b[0] - d[0]) + np.square(b[1] - d[1]), np.square(c[0] - d[0]) + np.square(c[1] - d[1])])
+    delta_first_column = [1, 1, 1, 1]
+    delta_second_column = [a[0], b[0], c[0], d[0]]
+    delta_third_column = [a[1], b[1], c[1], d[1]]
+    delta_forth_column = np.array([np.square(a[0]) + np.square(a[1]), np.square(b[0]) + np.square(b[1]), np.square(c[0]) + np.square(c[1]), np.square(d[0]) + np.square(d[1])])
 
-    matrix = np.matrix([first_column, second_column, third_column])
+    matrix_delta = np.matrix([delta_first_column, delta_second_column, delta_third_column, delta_forth_column])
+    determinant_delta = np.linalg.det(matrix_delta.T)
 
-    determinant = np.linalg.det(matrix.T)
+    gama_first_column = [1, 1, 1]
+    gama_second_column = [a[0], b[0], c[0]]
+    gama_third_column = [a[1], b[1], c[1]]
+    
+    matrix_gama = np.matrix([gama_first_column, gama_second_column, gama_third_column])
+    determinant_gama = np.linalg.det(matrix_gama.T)
 
-    return determinant > 0
+    return determinant_gama * determinant_delta < 0
 
 def delaunay_triangulation(data_triangulation, points):
     triangulation = deepcopy(data_triangulation)
-
     end_triangulation = False
 
     while not end_triangulation:
         end_triangulation = True
-        print("While Triangulation")
 
         for i, triangle in enumerate(triangulation):
             for j in range(3, 6):
-                # if triangle[j] is not None and triangle[j] > i:
                 if triangle[j] is not None:
                     triangle_1 = [triangle[0], triangle[1], triangle[2]]
                     triangle_2 = [triangulation[triangle[j]][0], triangulation[triangle[j]][1], triangulation[triangle[j]][2]]
-                    if convex_polygon(triangle_1, triangle_2, points):
-                        # print("Convex Angle")
-                        # angles_before_flip = get_angle_polygon(triangle_1, triangle_2, points)
-                        # new_triangle_1, new_triangle_2 = flip(triangle_1, triangle_2)
-                        # angles_after_flip = get_angle_polygon(new_triangle_1, new_triangle_2, points)
 
-                        # if fatter_triangulation(angles_before_flip, angles_after_flip):
-                        #     print("Fatter Triangulation")
-                        #     end_triangulation = False
-                        #     triangulation = update_data_structure(new_triangle_1, new_triangle_2, i, triangle[j], triangulation)
-
-                        if make_flip(triangle_1, triangle_2, points):
-                            print("Make Flip")
-                            new_triangle_1, new_triangle_2 = flip(triangle_1, triangle_2)
-                            end_triangulation = False
-                            triangulation = update_data_structure(new_triangle_1, new_triangle_2, i, triangle[j], triangulation)
+                    if can_make_flip(triangle_1, triangle_2, points):
+                        new_triangle_1, new_triangle_2 = flip(triangle_1, triangle_2)
+                        end_triangulation = False
+                        triangulation = update_data_structure(new_triangle_1, new_triangle_2, i, triangle[j], triangulation)
 
     return triangulation
 
-def graham_scan(points, original_indexes):
+def graham_scan_modified(points, original_indexes):
     hull = [original_indexes[0], original_indexes[1]]
     triangulation = []
 
@@ -254,14 +195,12 @@ def graham_scan(points, original_indexes):
         if convex_angle(points[hull[-2]], points[hull[-1]], points[original_indexes[i]]):
             hull.append(original_indexes[i])
             
-            # Verify if point that Grahan Scan started is alredy part of triangle
             indexes_to_consider = [hull[-2], hull[-1], original_indexes[i]]
             if hull[0] in indexes_to_consider:
                 triangulation.append(indexes_to_consider)
             else:
                 triangulation.append([hull[-2], hull[-1], hull[0]])
         else:
-            # Add triangle with start point of Grahan
             triangulation.append([hull[-1], original_indexes[i], hull[0]])
 
             while len(hull) > 1 and not convex_angle(points[hull[-2]], points[hull[-1]], points[original_indexes[i]]):
@@ -270,9 +209,9 @@ def graham_scan(points, original_indexes):
 
             hull.append(original_indexes[i])
 
-    return hull, triangulation
+    return triangulation
 
-def triangulation(points):
+def initial_triangulation(points):
     original_indexes = np.arange(len(points))
 
     # Get the index with small y. If there is a tie returns the index of the smallest y value with largest x value
@@ -286,17 +225,17 @@ def triangulation(points):
     original_indexes = original_indexes[index_to_sort_points]
 
     # Call function Graham Scan to find the convex hull
-    convex_hull_indexes, triangulation_indexes = graham_scan(points, original_indexes)
+    triangulation_indexes = graham_scan_modified(points, original_indexes)
 
-    return convex_hull_indexes, triangulation_indexes
+    return triangulation_indexes
 
-def print_solution(file_name, convex_hull_indexes):       
+def print_solution(file_name, final_triangulation):       
     with open(file_name, mode='w+') as fp:
-        for index in convex_hull_indexes:
-            print(str(index), file=fp)
+        for triangle in final_triangulation:
+            print(str(triangle[0]) + "   " + str(triangle[1]) + "   " + str(triangle[2]), file=fp)
         fp.close()
 
-def draw_polygon(points, convex_hull_indexes, datasetname, triangulation_indexes):
+def draw_polygon(points, datasetname, triangulation_indexes):
     rows_to_delete = [5, 4, 3]
     for row in triangulation_indexes:
         for index_to_delete in rows_to_delete:
@@ -306,9 +245,6 @@ def draw_polygon(points, convex_hull_indexes, datasetname, triangulation_indexes
     y_polygon = points[:,1]
 
     plt.scatter(x_polygon, y_polygon, color="black", marker='.')
-
-    # for i in range (len(x_polygon)):
-    #     plt.text(points[i, 0], points[i, 1], str(i))
 
     combination_points = [[0,1], [0,2], [1,2]]
 
@@ -326,29 +262,26 @@ def draw_polygon(points, convex_hull_indexes, datasetname, triangulation_indexes
     plt.close()
 
 def run():
-    # datasets = ["dataset/nuvem1.txt", "dataset/nuvem2.txt", "dataset/nuvem3.txt"]
-    datasets = ["dataset/nuvem1.txt"]
-
+    datasets = ["dataset/nuvem1.txt", "dataset/nuvem2.txt"]
+    
     for dataset in datasets:
         # Dataset path
         INPUT_PATH = dataset
         # Load dataset
         points = np.loadtxt(INPUT_PATH).astype(np.float)
         # Call function to construct solution
-        convex_hull_indexes, triangulation_indexes = triangulation(points)
-
-        # Create data structures
+        triangulation_indexes = initial_triangulation(points)
+        # Create data structure
         data_triangulation = create_data_structure(triangulation_indexes)
-
+        # Make Delaunay Triangulation
         final_triangulation = delaunay_triangulation(data_triangulation, points)
-
         # Name of solution file
         output_file_name = 'delaunay{}.txt'.format(INPUT_PATH[-5])
         # Function to save solution file
-        print_solution("solution/{}".format(output_file_name), convex_hull_indexes)
+        print_solution("solution/{}".format(output_file_name), final_triangulation)
         # Dataset name
         datasetname = output_file_name.split(".")[0]
         # Draw solution
-        draw_polygon(points, convex_hull_indexes, datasetname, final_triangulation)
+        draw_polygon(points, datasetname, final_triangulation)
 
 run()
