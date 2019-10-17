@@ -42,12 +42,6 @@ def convex_angle(point_1, point_2, point_3):
               (point_2[1] - point_1[1]) * (point_3[0] - point_1[0]))
     return crossp > 0
 
-# point_1 = [421, 137]
-# point_2 = [360, 111]
-# point_3 = [510, 166]
-# result = convex_angle(point_1, point_2, point_3)
-# print(result)
-
 def calculate_angle(a, b, c):
     ba = a - b
     bc = c - b
@@ -56,12 +50,6 @@ def calculate_angle(a, b, c):
     angle = np.arccos(cosine_angle)
 
     return np.degrees(angle)
-
-# a = np.array([1, 0.7])
-# b = np.array([0, 0])
-# c = np.array([1, 0])
-# angle = calculate_angle(a, b, c)
-# print(angle)
 
 def flip(triangle_1, triangle_2):
     vertex_list = [triangle_1[0], triangle_1[1], triangle_1[2], triangle_2[0], triangle_2[1], triangle_2[2]]
@@ -84,10 +72,6 @@ def flip(triangle_1, triangle_2):
 
     return new_triangle_1, new_triangle_2
 
-# triangle_1 = [25, 13, 20]
-# triangle_2 = [13, 26, 20]
-# n_t1, n_t2 = flip(triangle_1, triangle_2)
-
 def convex_polygon(triangle_1, triangle_2, points):
     vertex_to_verify = []
     triangles = [triangle_1, triangle_2]
@@ -105,73 +89,6 @@ def convex_polygon(triangle_1, triangle_2, points):
             break
 
     return is_convex_polygon
-
-    # edges_to_use = []
-    # vertex_of_triangles = []
-    # points_to_verify_convexity = []
-    # triangles = [triangle_1, triangle_2]
-    # combination_edges = [[0,1], [0, 2], [1, 2]]
-
-    # # Take all edges of triangles
-    # for triangle in triangles:
-    #     for edge in combination_edges:
-    #         edges_to_use.append([triangle[edge[0]], triangle[edge[1]]])
-    #     for i in range(3):
-    #         vertex_of_triangles.append(triangle[i])
-
-    # # Delete commom edges
-    # edges_to_delete = []
-    # for i in range(len(edges_to_use)):
-    #     if all(elem in edges_to_use[i] for elem in commom_edge):
-    #         edges_to_delete.append(i)
-
-    # edges_to_delete.sort(reverse=True)
-    # for index_edge_to_delete in edges_to_delete:
-    #     edges_to_use.pop(index_edge_to_delete)
-
-    # # Delete duplicated vertexes
-    # # vertex_of_triangles = list(set(vertex_of_triangles))
-    # vertex_of_triangles = list(dict.fromkeys(vertex_of_triangles))
-
-    # for vertex in vertex_of_triangles:
-    #     points_to_verify = []
-    #     edges_repeated_elements = []
-    #     for edge in edges_to_use:
-    #         if vertex in edge:
-    #             edges_repeated_elements.append(edge)
-    #     for edge in edges_repeated_elements:
-    #         points_to_verify.append(edge[0])
-    #         points_to_verify.append(edge[1])
-
-    #     # From 4 points take 3 not repeated and leave the repeated in the middle of the other two
-    #     points_to_verify.sort()
-    #     repeated_point = None
-    #     for i in range(1, len(points_to_verify)):
-    #         if points_to_verify[i - 1] == points_to_verify[i]:
-    #             repeated_point = points_to_verify[i]
-    #             break
-    #     points_in_order = []
-    #     for point in points_to_verify:
-    #         if point != repeated_point:
-    #             points_in_order.append(point)
-        
-    #     points_in_order.insert(1, repeated_point)
-    #     # points_in_order.sort()
-    #     points_to_verify_convexity.append(points_in_order)
-    
-    # is_convex_polygon = True
-    # for index_points in points_to_verify_convexity:
-    #     if not convex_angle(points[index_points[0]], points[index_points[1]], points[index_points[2]]):
-    #         is_convex_polygon = False
-    #         break
-
-    # return is_convex_polygon
-
-# # Chamada convex_polygon
-# triangle_1 = [25, 13, 20]
-# triangle_2 = [13, 26, 20]
-# points = np.loadtxt("dataset/fecho1.txt").astype(np.float)
-# convex_polygon(triangle_1, triangle_2, points)
 
 def create_data_structure(triangulation_indexes):
     data_structure = []
@@ -200,11 +117,12 @@ def update_data_structure(new_triangle_1, new_triangle_2, index_1, index_2, tria
     triangles_to_update = [new_triangle_1, new_triangle_2]
     index_triangles_to_update = [index_1, index_2]
 
+    index_neibourhood_to_update = []
     for i, index_triangle in enumerate(index_triangles_to_update):
-        index_neibourhood_to_update = []
         for j, vertex in enumerate(triangles_to_update[i]):
             triangulation[index_triangle][j] = vertex
-            index_neibourhood_to_update.append(triangulation[index_triangle][j + 3])
+            if triangulation[index_triangle][j + 3] != None:
+                index_neibourhood_to_update.append(triangulation[index_triangle][j + 3])
 
     for index_triangle in index_neibourhood_to_update:
         if index_triangle not in index_triangles_to_update:
@@ -249,12 +167,13 @@ def get_angle_polygon(triangle_1, triangle_2, points):
     angle_list = []
 
     for triangle in triangles:
-        for i, vertex in enumerate(triangle):
-            # TODO Verificar se sempre tenho um ponto diferente no meio
-            angle = calculate_angle(points[vertex[i]], points[vertex[(i + 1) % 3]], points[vertex[(i + 2) % 3]])
+        for i in range(len(triangle)):
+            angle = calculate_angle(points[triangle[i]], points[triangle[(i + 1) % 3]], points[triangle[(i + 2) % 3]])
             angle_list.append(angle)
 
-    return angle_list.sort()
+    angle_list.sort()
+
+    return angle_list
 
 def fatter_triangulation(angles_before_flip, angles_after_flip):
     fatter = False
@@ -263,22 +182,67 @@ def fatter_triangulation(angles_before_flip, angles_after_flip):
         if angles_after_flip[k] > angles_before_flip[k]:
             fatter = True
             break
+        elif angles_after_flip[k] < angles_before_flip[k]:
+            break
 
     return fatter
 
-def delaunay_triangulation(triangulation, points):
-    for i, triangle in enumerate(triangulation):
-        for j in range(3, 6):
-            if triangle[j] is not None and triangle[j] > i:
-                triangle_1 = [triangle[0], triangle[1], triangle[2]]
-                triangle_2 = [triangulation[triangle[j]][0], triangulation[triangle[j]][1], triangulation[triangle[j]][2]]
-                if convex_polygon(triangle_1, triangle_2, points):
-                    angles_before_flip = get_angle_polygon(triangle_1, triangle_2, points)
-                    new_triangle_1, new_triangle_2 = flip(triangle_1, triangle_2)
-                    angles_after_flip = get_angle_polygon(new_triangle_1, new_triangle_2, points)
+def make_flip(triangle_1, triangle_2, points):
+    a = points[triangle_1[0]]
+    b = points[triangle_1[1]]
+    c = points[triangle_1[2]]
+    d = None
 
-                    if fatter_triangulation(angles_before_flip, angles_after_flip):
-                        triangulation = update_data_structure(new_triangle_1, new_triangle_2, i, triangle[j], triangulation)
+    for element_triangle_2 in triangle_2:
+        in_triangle_1 = False
+        for element_triangle_1 in triangle_1:
+            if element_triangle_2 == element_triangle_1:
+                in_triangle_1 = True
+                break
+        if not in_triangle_1:
+            d = points[element_triangle_2]
+
+    first_column = np.array([a[0] - d[0], b[0] - d[0], c[0] - d[0]])
+    second_column = np.array([a[1] - d[1], b[1] - d[1], c[1] - d[1]])
+    third_column = np.array([np.square(a[0] - d[0]) + np.square(a[1] - d[1]), np.square(b[0] - d[0]) + np.square(b[1] - d[1]), np.square(c[0] - d[0]) + np.square(c[1] - d[1])])
+
+    matrix = np.matrix([first_column, second_column, third_column])
+
+    determinant = np.linalg.det(matrix.T)
+
+    return determinant > 0
+
+def delaunay_triangulation(data_triangulation, points):
+    triangulation = deepcopy(data_triangulation)
+
+    end_triangulation = False
+
+    while not end_triangulation:
+        end_triangulation = True
+        print("While Triangulation")
+
+        for i, triangle in enumerate(triangulation):
+            for j in range(3, 6):
+                # if triangle[j] is not None and triangle[j] > i:
+                if triangle[j] is not None:
+                    triangle_1 = [triangle[0], triangle[1], triangle[2]]
+                    triangle_2 = [triangulation[triangle[j]][0], triangulation[triangle[j]][1], triangulation[triangle[j]][2]]
+                    if convex_polygon(triangle_1, triangle_2, points):
+                        # print("Convex Angle")
+                        # angles_before_flip = get_angle_polygon(triangle_1, triangle_2, points)
+                        # new_triangle_1, new_triangle_2 = flip(triangle_1, triangle_2)
+                        # angles_after_flip = get_angle_polygon(new_triangle_1, new_triangle_2, points)
+
+                        # if fatter_triangulation(angles_before_flip, angles_after_flip):
+                        #     print("Fatter Triangulation")
+                        #     end_triangulation = False
+                        #     triangulation = update_data_structure(new_triangle_1, new_triangle_2, i, triangle[j], triangulation)
+
+                        if make_flip(triangle_1, triangle_2, points):
+                            print("Make Flip")
+                            new_triangle_1, new_triangle_2 = flip(triangle_1, triangle_2)
+                            end_triangulation = False
+                            triangulation = update_data_structure(new_triangle_1, new_triangle_2, i, triangle[j], triangulation)
 
     return triangulation
 
@@ -333,6 +297,11 @@ def print_solution(file_name, convex_hull_indexes):
         fp.close()
 
 def draw_polygon(points, convex_hull_indexes, datasetname, triangulation_indexes):
+    rows_to_delete = [5, 4, 3]
+    for row in triangulation_indexes:
+        for index_to_delete in rows_to_delete:
+            del row[index_to_delete]
+
     x_polygon = points[:,0]
     y_polygon = points[:,1]
 
@@ -357,7 +326,8 @@ def draw_polygon(points, convex_hull_indexes, datasetname, triangulation_indexes
     plt.close()
 
 def run():
-    datasets = ["dataset/nuvem1.txt", "dataset/nuvem2.txt", "dataset/nuvem3.txt"]
+    # datasets = ["dataset/nuvem1.txt", "dataset/nuvem2.txt", "dataset/nuvem3.txt"]
+    datasets = ["dataset/nuvem1.txt"]
 
     for dataset in datasets:
         # Dataset path
@@ -370,7 +340,7 @@ def run():
         # Create data structures
         data_triangulation = create_data_structure(triangulation_indexes)
 
-        delaunay_triangulation(data_triangulation, points)
+        final_triangulation = delaunay_triangulation(data_triangulation, points)
 
         # Name of solution file
         output_file_name = 'delaunay{}.txt'.format(INPUT_PATH[-5])
@@ -379,6 +349,6 @@ def run():
         # Dataset name
         datasetname = output_file_name.split(".")[0]
         # Draw solution
-        draw_polygon(points, convex_hull_indexes, datasetname, triangulation_indexes)
+        draw_polygon(points, convex_hull_indexes, datasetname, final_triangulation)
 
 run()
